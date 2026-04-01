@@ -27,6 +27,7 @@ html,body { background:var(--bg); color:var(--ink); font-family:var(--font); ove
 #app {
   display:flex; flex-direction:column;
   max-width:680px; margin:0 auto;
+  position:relative; min-height:100vh;
 }
 
 /* HEADER */
@@ -304,9 +305,9 @@ header {
     <div class="start-logo">TYPE<em>FIRE</em></div>
     <p class="start-desc">Type the words as fast as you can.<br>Press <strong>Space</strong> after each word.</p>
     <div class="start-modes">
-      <button class="start-mode-btn active" data-time="30">30s</button>
+      <button class="start-mode-btn active" data-time="15">15s</button>
+      <button class="start-mode-btn" data-time="30">30s</button>
       <button class="start-mode-btn" data-time="60">60s</button>
-      <button class="start-mode-btn" data-time="120">120s</button>
     </div>
     <button class="start-btn" id="start-btn">START</button>
   </div>
@@ -322,6 +323,10 @@ header {
       <div class="result-cell"><div class="v" id="r-err">0</div><div class="l">Errors</div></div>
       <div class="result-cell"><div class="v" id="r-chars">0</div><div class="l">Correct Chars</div></div>
       <div class="result-cell"><div class="v" id="r-time">0s</div><div class="l">Duration</div></div>
+    </div>
+    <div class="ad-slot" style="width:100%;max-width:320px;margin-bottom:.4rem;">
+      <!-- AdSense: replace with your ad unit code -->
+      <div class="ad-placeholder">Advertisement</div>
     </div>
     <div class="nickname-row">
       <input class="nickname-input" id="nickname-input" type="text" maxlength="16"
@@ -342,9 +347,9 @@ header {
       <button class="lb-close" id="lb-close">CLOSE</button>
     </div>
     <div class="lb-tabs">
-      <button class="lb-tab active" data-time="30">30s</button>
+      <button class="lb-tab active" data-time="15">15s</button>
+      <button class="lb-tab" data-time="30">30s</button>
       <button class="lb-tab" data-time="60">60s</button>
-      <button class="lb-tab" data-time="120">120s</button>
     </div>
     <div class="lb-list" id="lb-list">
       <div class="lb-loading">Loading...</div>
@@ -356,14 +361,14 @@ header {
     <div class="logo">TYPE<em>FIRE</em></div>
     <div class="header-right">
       <button class="lb-btn" id="lb-open-btn">🏆 RANK</button>
-      <div class="header-time" id="time-display">30</div>
+      <div class="header-time" id="time-display">15</div>
     </div>
   </header>
 
   <div class="modes">
-    <button class="mode-btn active" data-time="30">30s</button>
+    <button class="mode-btn active" data-time="15">15s</button>
+    <button class="mode-btn" data-time="30">30s</button>
     <button class="mode-btn" data-time="60">60s</button>
-    <button class="mode-btn" data-time="120">120s</button>
   </div>
 
   <div class="stats-row">
@@ -391,10 +396,7 @@ header {
     <div id="tap-hint"><span>Tap to start typing</span></div>
   </div>
 
-  <div class="ad-slot">
-    <!-- AdSense: replace the div below with your AdSense ad unit code -->
-    <div class="ad-placeholder">Advertisement</div>
-  </div>
+
 
   <!-- FOOTER -->
   <footer class="site-footer">
@@ -418,7 +420,7 @@ header {
     <p>TYPEFIRE is a minimalist typing speed test designed for people who want to improve their words-per-minute (WPM) and accuracy. It's fast, distraction-free, and works on any device.</p>
 
     <h2>How it works</h2>
-    <p>Choose a duration — 30, 60, or 120 seconds — then start typing. Words are drawn from a curated library of science, philosophy, and general knowledge passages, so every session feels fresh.</p>
+    <p>Choose a duration — 15, 30, or 60 seconds — then start typing. Words are drawn from a curated library of science, philosophy, and general knowledge passages, so every session feels fresh.</p>
     <ul>
       <li>Green characters = correctly typed</li>
       <li>Red characters = mistakes</li>
@@ -436,7 +438,7 @@ header {
       <li>Focus on accuracy first — speed follows naturally</li>
       <li>Keep your eyes on the word display, not your fingers</li>
       <li>Practice daily, even just one 30-second session</li>
-      <li>Try the 120s mode to build stamina</li>
+      <li>Try the 60s mode to build stamina</li>
     </ul>
   </div>
 </div>
@@ -620,12 +622,11 @@ function getPassageWords() {
   const pool = wikiPassageCache.length > 0
     ? [...wikiPassageCache, ...PASSAGES]
     : PASSAGES;
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  const text = shuffled.slice(0, 3).join(' ');
-  return text
+  // Pick one passage at random, use it in full from the beginning
+  const passage = pool[Math.floor(Math.random() * pool.length)];
+  return passage
     .replace(/[""'']/g, "'")
-    .replace(/[^a-zA-Z'\- ]/g, '')
-    .toLowerCase()
+    .replace(/[^a-zA-Z0-9'\-.,!?;: ]/g, '')
     .split(/\s+/)
     .filter(w => w.length > 0);
 }
@@ -634,7 +635,7 @@ prefetchWikiPassages();
 
 const $=id=>document.getElementById(id);
 let words=[],curWord=0,timer=null;
-let timeLeft=30,totalTime=30;
+let timeLeft=15,totalTime=15;
 let correctChars=0,totalTyped=0,errors=0;
 let active=false,done=false,startTime=null;
 let lastVal='';
@@ -706,6 +707,8 @@ function advance(typedVal){
     if(i<typedVal.length&&typedVal[i]===word[i])correctChars++;
     else if(i<typedVal.length)errors++;
   }
+  // count the space as a correct char (word separator)
+  correctChars++;
   totalTyped+=typedVal.length+1;
   colorWord(curWord,typedVal+' ');
   curWord++;
@@ -746,7 +749,8 @@ inp.addEventListener('input',()=>{
 });
 
 inp.addEventListener('keydown',e=>{
-  if(!active&&!done)startGame();
+  if(done)return;
+  if(!active)startGame();
   if(e.key===' '||e.key==='Enter'){
     e.preventDefault();
     const t=inp.value.trim();
@@ -773,7 +777,12 @@ function startGame(){
 }
 
 async function endGame(){
-  clearInterval(timer);active=false;done=true;inp.blur();
+  clearInterval(timer);active=false;done=true;
+  // Force keyboard dismiss
+  inp.blur();
+  inp.disabled=true;
+  setTimeout(()=>{inp.disabled=false;},2000);
+
   const elapsed=(Date.now()-startTime)/60000;
   const wpm=Math.round((correctChars/5)/elapsed);
   const acc=totalTyped>0?Math.round(correctChars/totalTyped*100)+'%':'—';
@@ -784,7 +793,15 @@ async function endGame(){
   $('r-err').textContent=errors;
   $('r-chars').textContent=correctChars;
   $('r-time').textContent=totalTime+'s';
-  $('result-screen').classList.add('show');
+
+  // Show result screen but disable buttons briefly to prevent accidental taps
+  const screen=$('result-screen');
+  screen.classList.add('show');
+  const btns=screen.querySelectorAll('button,.again-btn,.share-btn');
+  btns.forEach(b=>{b.disabled=true;b.style.opacity='.45';b.style.pointerEvents='none';});
+  setTimeout(()=>{
+    btns.forEach(b=>{b.disabled=false;b.style.opacity='';b.style.pointerEvents='';});
+  },1000);
 
   // check rank without saving yet
   checkRank(wpm);
@@ -957,10 +974,18 @@ $('share-btn').addEventListener('click',async()=>{
           title:`TYPEFIRE — ${lastResult.wpm} WPM`,
           text:`I just typed ${lastResult.wpm} WPM on TYPEFIRE! Can you beat me?`
         });
-        return;
-      }catch(e){}
+      }catch(e){
+        // AbortError = user cancelled, do nothing
+        // Other errors fall through to download
+        if(e.name==='AbortError')return;
+        const a=document.createElement('a');
+        a.href=URL.createObjectURL(blob);
+        a.download='typefire-result.png';
+        a.click();
+      }
+      return;
     }
-    // fallback: download
+    // fallback: download (no Web Share API)
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
     a.download='typefire-result.png';
@@ -969,7 +994,7 @@ $('share-btn').addEventListener('click',async()=>{
 });
 
 // ── LEADERBOARD ──
-let lbTime=30;
+let lbTime=15;
 
 $('lb-open-btn').addEventListener('click',()=>{
   $('lb-overlay').classList.add('show');
@@ -1017,7 +1042,7 @@ async function loadLeaderboard(duration){
           </div>
           <div class="lb-acc">${s.acc?s.acc+'%':''}</div>
         </div>`;
-    }).join('');
+    }).join('') + `<div class="ad-slot" style="margin-top:.8rem;"><!-- AdSense: replace with your ad unit code --><div class="ad-placeholder">Advertisement</div></div>`;
   }catch(e){
     console.warn('Leaderboard REST error:',e);
     try{
